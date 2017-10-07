@@ -1,0 +1,32 @@
+
+#import kai("libc")
+
+append :: fn (str: string, val: string) -> string {
+    newLen := str.len + val.len
+
+    // 0 indicates that the string was stack allocated
+    if str.cap == 0 {
+        buff := libc.malloc(newLen)
+        dataCopy := libc.memcpy(buff, str.raw, str.len)
+        str.raw = dataCopy
+        str.cap = newLen
+    }
+
+    if newLen > str.cap {
+        newCap := newLen * 2
+        buff := libc.realloc(str.raw, newCap)
+        str.raw = buff
+        str.cap = newCap
+    }
+
+    libc.memcpy(&str.raw[str.len], val.raw, val.len)
+    str.len = newLen
+
+    return str
+}
+
+nulTerminate :: fn(s: string) -> string {
+    s = append(s, "\x00")
+    s.len -= 1
+    return s
+}
