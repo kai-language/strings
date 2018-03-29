@@ -1,32 +1,62 @@
 
 #import kai("posix")
+#import kai("arrays")
 
-append :: fn (str: string, val: string) -> string {
-    newLen := str.len + val.len
-
-    // 0 indicates that the string was stack allocated
-    if str.cap == 0 {
-        buff := posix.malloc(newLen)
-        dataCopy := posix.memcpy(buff, str.raw, str.len)
-        str.raw = dataCopy
-        str.cap = newLen
-    }
-
-    if newLen > str.cap {
-        newCap := newLen * 2
-        buff := posix.realloc(str.raw, newCap)
-        str.raw = buff
-        str.cap = newCap
-    }
-
-    posix.memcpy(&str.raw[str.len], val.raw, val.len)
-    str.len = newLen
-
-    return str
+NulTerminate :: fn(s: *string) -> void {
+    arrays.Append(s, 0)
+    s.len += 1
 }
 
-nulTerminate :: fn(s: string) -> string {
-    s = append(s, "\x00")
-    s.len -= 1
+FromCString :: fn(p: *u8) -> string {
+    if p == nil return ""
+
+    len := posix.strlen(p)
+
+    s := []u8{}
+    arrays.Reserve(&s, len + 1)
+    s.raw = p
+    s.len = len
+    s.cap = len
+
+    return bitcast(string) s
+}
+
+FromCStringCopy :: fn(p: *u8) -> string {
+    if p == nil return ""
+
+    len := posix.strlen(p)
+
+    s := []u8{}
+    arrays.Reserve(&s, len + 1)
+    s.raw = posix.memcpy(s.raw, p, len + 1)
+    s.len = len
+    s.cap = len
+
     return s
+}
+
+#test "NulTerminate" {
+    str := "0"
+    arrays.Append(&str, "1")
+    str.raw[2] = 0xff
+    NulTerminate(&str)
+    assert(str.raw[2] == 0)
+}
+
+#test "FromCString" {
+    cstring := "asdf".raw
+
+    str := FromCString(cstring)
+    assert(str.raw == cstring)
+    assert(str.len == 4)
+    assert(str.cap == 4)
+}
+
+#test "FromCStringCopy" {
+    cstring := "asdf".raw
+
+    str := FromCStringCopy(cstring)
+    assert(str.raw != cstring)
+    assert(str.len == 4)
+    assert(str.cap == 4)
 }
