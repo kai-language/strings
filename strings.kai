@@ -2,6 +2,15 @@
 #import kai("posix")
 #import kai("arrays")
 
+Equal :: fn(a, b: string) -> bool {
+    if a.len != b.len return false
+
+    for _, i in a {
+        if a[i] != b[i] return false
+    }
+    return true
+}
+
 NulTerminate :: fn(s: *string) -> void {
     arrays.Append(s, 0)
     s.len += 1
@@ -33,6 +42,13 @@ FromCStringCopy :: fn(p: *u8) -> string {
     s.cap = len
 
     return s
+}
+
+#test "Equal" {
+    assert(Equal("", ""))
+    assert(Equal("Kai", "Kai"))
+    assert(!Equal("1", "42"))
+    assert(!Equal("Kai", "Swift"))
 }
 
 #test "NulTerminate" {
